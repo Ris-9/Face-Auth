@@ -1,0 +1,22 @@
+name: face_auth
+channels:
+  - conda-forge
+  - pytorch
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - cmake
+  - pip:
+    - flask>=2.3.0
+    - flask-cors>=4.0.0
+    - facenet-pytorch>=2.5.0
+    - torch>=2.0.0
+    - torchvision>=0.15.0
+    - opencv-python>=4.8.0
+    - numpy>=1.24.0
+    - scipy>=1.10.0
+    - dlib>=19.24.0
+    - PyQt6>=6.5.0
+    - pillow>=10.0.0
+    - requests>=2.31.0
