@@ -1,16 +1,17 @@
 """
 Authentication Screen for Face Authentication Desktop App.
 Allows users to authenticate using facial recognition.
+Features modern UI with glassmorphism and gradient effects.
 """
 
 import base64
 import requests
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
-    QPushButton, QFrame, QLineEdit
+    QPushButton, QFrame, QLineEdit, QGraphicsDropShadowEffect
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QTimer
-from PyQt6.QtGui import QFont
+from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QPropertyAnimation, QEasingCurve
+from PyQt6.QtGui import QFont, QColor
 import cv2
 
 from .camera_widget import CameraWidget
@@ -35,124 +36,234 @@ class AuthenticationScreen(QWidget):
     def _init_ui(self):
         """Initialize the UI."""
         layout = QVBoxLayout(self)
-        layout.setSpacing(20)
-        layout.setContentsMargins(40, 20, 40, 20)
+        layout.setSpacing(25)
+        layout.setContentsMargins(50, 30, 50, 30)
         
-        # Header
-        header = QLabel("Face Authentication")
-        header.setFont(QFont("Segoe UI", 24, QFont.Weight.Bold))
-        header.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        header.setStyleSheet("color: #00ff88;")
-        layout.addWidget(header)
+        # Header section
+        header_layout = QHBoxLayout()
+        
+        # Back button (top left)
+        back_btn = self._create_back_button()
+        header_layout.addWidget(back_btn)
+        header_layout.addStretch()
+        
+        layout.addLayout(header_layout)
+        
+        # Title with icon
+        title_container = QWidget()
+        title_layout = QHBoxLayout(title_container)
+        title_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title_layout.setSpacing(15)
+        
+        title_icon = QLabel("🔓")
+        title_icon.setFont(QFont("Segoe UI Emoji", 36))
+        title_layout.addWidget(title_icon)
+        
+        title = QLabel("Face Authentication")
+        title.setFont(QFont("Segoe UI", 32, QFont.Weight.Bold))
+        title.setStyleSheet("color: #00ff88;")
+        title_layout.addWidget(title)
+        
+        layout.addWidget(title_container)
         
         # Subtitle
-        subtitle = QLabel("Look at the camera to authenticate")
-        subtitle.setFont(QFont("Segoe UI", 12))
+        subtitle = QLabel("Verify your identity with a quick face scan")
+        subtitle.setFont(QFont("Segoe UI", 13))
         subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        subtitle.setStyleSheet("color: #888;")
+        subtitle.setStyleSheet("color: rgba(255, 255, 255, 0.6);")
         layout.addWidget(subtitle)
         
-        layout.addSpacing(10)
+        layout.addSpacing(15)
         
         # Main content
         content_layout = QHBoxLayout()
-        content_layout.setSpacing(30)
+        content_layout.setSpacing(35)
         
-        # Camera container
+        # Left side - Camera
+        camera_container = self._create_camera_section()
+        content_layout.addWidget(camera_container, stretch=3)
+        
+        # Right side - Status and controls
+        control_container = self._create_control_section()
+        content_layout.addWidget(control_container, stretch=2)
+        
+        layout.addLayout(content_layout)
+    
+    def _create_back_button(self) -> QPushButton:
+        """Create styled back button."""
+        back_btn = QPushButton("← Back to Home")
+        back_btn.setFont(QFont("Segoe UI", 11))
+        back_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        back_btn.setFixedWidth(150)
+        back_btn.setStyleSheet("""
+            QPushButton {
+                background: rgba(255, 255, 255, 0.05);
+                color: rgba(255, 255, 255, 0.7);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 10px;
+                padding: 12px 20px;
+            }
+            QPushButton:hover {
+                color: #ffffff;
+                border-color: rgba(255, 255, 255, 0.3);
+                background: rgba(255, 255, 255, 0.1);
+            }
+            QPushButton:pressed {
+                background: rgba(255, 255, 255, 0.05);
+            }
+        """)
+        back_btn.clicked.connect(self._on_back_clicked)
+        return back_btn
+    
+    def _create_camera_section(self) -> QFrame:
+        """Create camera section with styling."""
         camera_container = QFrame()
         camera_container.setStyleSheet("""
             QFrame {
-                background-color: #16213e;
-                border-radius: 15px;
-                padding: 15px;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 rgba(22, 33, 62, 0.9), stop:1 rgba(15, 52, 96, 0.9));
+                border: 1px solid rgba(0, 255, 136, 0.2);
+                border-radius: 20px;
             }
         """)
-        camera_layout = QVBoxLayout(camera_container)
         
+        # Add shadow
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(30)
+        shadow.setXOffset(0)
+        shadow.setYOffset(10)
+        shadow.setColor(QColor(0, 0, 0, 80))
+        camera_container.setGraphicsEffect(shadow)
+        
+        camera_layout = QVBoxLayout(camera_container)
+        camera_layout.setContentsMargins(20, 20, 20, 20)
+        camera_layout.setSpacing(15)
+        
+        # Camera widget
         self.camera_widget = CameraWidget(show_face_box=True, mirror=True)
         self.camera_widget.face_detected.connect(self._on_face_detected)
+        self.camera_widget.setMinimumHeight(400)
         camera_layout.addWidget(self.camera_widget)
         
         # Liveness indicator
-        self.liveness_label = QLabel("🔄 Checking liveness...")
-        self.liveness_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.liveness_label.setFont(QFont("Segoe UI", 11))
-        self.liveness_label.setStyleSheet("color: #888; padding: 10px;")
-        camera_layout.addWidget(self.liveness_label)
+        self.liveness_frame = QFrame()
+        self.liveness_frame.setStyleSheet("""
+            QFrame {
+                background: rgba(136, 136, 136, 0.1);
+                border: 1px solid rgba(136, 136, 136, 0.3);
+                border-radius: 10px;
+                padding: 5px;
+            }
+        """)
+        liveness_layout = QHBoxLayout(self.liveness_frame)
+        liveness_layout.setContentsMargins(15, 10, 15, 10)
         
-        content_layout.addWidget(camera_container, stretch=2)
+        self.liveness_icon = QLabel("🔄")
+        self.liveness_icon.setFont(QFont("Segoe UI Emoji", 16))
+        liveness_layout.addWidget(self.liveness_icon)
         
-        # Right side - Status and controls
+        self.liveness_label = QLabel("Position your face in the frame")
+        self.liveness_label.setFont(QFont("Segoe UI", 12))
+        self.liveness_label.setStyleSheet("color: #888; background: transparent;")
+        liveness_layout.addWidget(self.liveness_label)
+        liveness_layout.addStretch()
+        
+        camera_layout.addWidget(self.liveness_frame)
+        
+        return camera_container
+    
+    def _create_control_section(self) -> QFrame:
+        """Create control section with styling."""
         control_container = QFrame()
         control_container.setStyleSheet("""
             QFrame {
-                background-color: #16213e;
-                border-radius: 15px;
-                padding: 25px;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 rgba(22, 33, 62, 0.9), stop:1 rgba(15, 52, 96, 0.9));
+                border: 1px solid rgba(0, 255, 136, 0.2);
+                border-radius: 20px;
             }
         """)
+        
+        # Add shadow
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(30)
+        shadow.setXOffset(0)
+        shadow.setYOffset(10)
+        shadow.setColor(QColor(0, 0, 0, 80))
+        control_container.setGraphicsEffect(shadow)
+        
         control_layout = QVBoxLayout(control_container)
         control_layout.setSpacing(20)
+        control_layout.setContentsMargins(30, 30, 30, 30)
         
-        # Optional username for 1:1 verification
-        username_label = QLabel("Username (optional)")
-        username_label.setFont(QFont("Segoe UI", 11))
-        username_label.setStyleSheet("color: #aaa;")
+        # Optional username input
+        username_label = QLabel("👤 Username (Optional)")
+        username_label.setFont(QFont("Segoe UI", 12))
+        username_label.setStyleSheet("color: rgba(255, 255, 255, 0.8); background: transparent;")
         control_layout.addWidget(username_label)
         
         self.username_input = QLineEdit()
         self.username_input.setPlaceholderText("Leave empty for 1:N identification")
         self.username_input.setFont(QFont("Segoe UI", 12))
+        self.username_input.setMinimumHeight(45)
         self.username_input.setStyleSheet("""
             QLineEdit {
-                background-color: #0f3460;
-                border: 2px solid #1a1a2e;
-                border-radius: 8px;
-                padding: 12px;
+                background-color: rgba(15, 52, 96, 0.8);
+                border: 2px solid rgba(0, 255, 136, 0.2);
+                border-radius: 10px;
+                padding: 10px 15px;
                 color: #fff;
             }
             QLineEdit:focus {
                 border-color: #00ff88;
+                background-color: rgba(15, 52, 96, 1);
+            }
+            QLineEdit::placeholder {
+                color: rgba(255, 255, 255, 0.4);
             }
         """)
         control_layout.addWidget(self.username_input)
         
         control_layout.addSpacing(10)
         
-        # Status display
+        # Status display card
         self.status_frame = QFrame()
+        self.status_frame.setMinimumHeight(180)
         self.status_frame.setStyleSheet("""
             QFrame {
-                background-color: #0f3460;
-                border-radius: 10px;
-                padding: 15px;
+                background: rgba(15, 52, 96, 0.8);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 15px;
             }
         """)
         status_layout = QVBoxLayout(self.status_frame)
+        status_layout.setSpacing(10)
+        status_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
         self.status_icon = QLabel("🔒")
-        self.status_icon.setFont(QFont("Segoe UI", 48))
+        self.status_icon.setFont(QFont("Segoe UI Emoji", 52))
         self.status_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.status_icon.setStyleSheet("background: transparent;")
         status_layout.addWidget(self.status_icon)
         
         self.status_label = QLabel("Position your face and click Authenticate")
         self.status_label.setFont(QFont("Segoe UI", 12))
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.status_label.setWordWrap(True)
-        self.status_label.setStyleSheet("color: #888;")
+        self.status_label.setStyleSheet("color: rgba(255, 255, 255, 0.6); background: transparent;")
         status_layout.addWidget(self.status_label)
         
         self.user_info_label = QLabel("")
-        self.user_info_label.setFont(QFont("Segoe UI", 14, QFont.Weight.Bold))
+        self.user_info_label.setFont(QFont("Segoe UI", 16, QFont.Weight.Bold))
         self.user_info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.user_info_label.setStyleSheet("color: #00ff88;")
+        self.user_info_label.setStyleSheet("color: #00ff88; background: transparent;")
         self.user_info_label.hide()
         status_layout.addWidget(self.user_info_label)
         
         self.similarity_label = QLabel("")
-        self.similarity_label.setFont(QFont("Segoe UI", 10))
+        self.similarity_label.setFont(QFont("Segoe UI", 11))
         self.similarity_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.similarity_label.setStyleSheet("color: #888;")
+        self.similarity_label.setStyleSheet("color: rgba(255, 255, 255, 0.5); background: transparent;")
         self.similarity_label.hide()
         status_layout.addWidget(self.similarity_label)
         
@@ -162,17 +273,18 @@ class AuthenticationScreen(QWidget):
         
         # Authenticate button
         self.auth_btn = QPushButton("🔓 Authenticate")
-        self.auth_btn.setFont(QFont("Segoe UI", 14, QFont.Weight.Bold))
+        self.auth_btn.setFont(QFont("Segoe UI", 15, QFont.Weight.Bold))
         self.auth_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.auth_btn.setMinimumHeight(55)
         self.auth_btn.setStyleSheet("""
             QPushButton {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
                     stop:0 #00ff88, stop:1 #00cc6e);
-                color: #1a1a2e;
+                color: #0d1117;
                 border: none;
-                border-radius: 10px;
+                border-radius: 12px;
                 padding: 15px 30px;
-                font-size: 14px;
+                font-weight: bold;
             }
             QPushButton:hover {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
@@ -183,47 +295,50 @@ class AuthenticationScreen(QWidget):
                     stop:0 #00dd77, stop:1 #00bb5e);
             }
             QPushButton:disabled {
-                background: #444;
-                color: #888;
+                background: rgba(68, 68, 68, 0.5);
+                color: rgba(255, 255, 255, 0.3);
             }
         """)
         self.auth_btn.clicked.connect(self._on_authenticate_clicked)
         control_layout.addWidget(self.auth_btn)
         
-        content_layout.addWidget(control_container, stretch=1)
+        # Quick tips
+        tips_label = QLabel("💡 Tip: For faster verification, enter your username")
+        tips_label.setFont(QFont("Segoe UI", 10))
+        tips_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        tips_label.setStyleSheet("color: rgba(255, 255, 255, 0.4); background: transparent;")
+        control_layout.addWidget(tips_label)
         
-        layout.addLayout(content_layout)
-        
-        # Back button
-        back_btn = QPushButton("← Back to Home")
-        back_btn.setFont(QFont("Segoe UI", 11))
-        back_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        back_btn.setStyleSheet("""
-            QPushButton {
-                background: transparent;
-                color: #888;
-                border: 1px solid #444;
-                border-radius: 8px;
-                padding: 10px 20px;
-            }
-            QPushButton:hover {
-                color: #fff;
-                border-color: #666;
-            }
-        """)
-        back_btn.clicked.connect(self._on_back_clicked)
-        layout.addWidget(back_btn, alignment=Qt.AlignmentFlag.AlignLeft)
+        return control_container
     
     def _on_face_detected(self, detected: bool, box):
         """Handle face detection status."""
         self.face_detected = detected
         
         if detected:
-            self.liveness_label.setText("✅ Face detected - Ready to authenticate")
-            self.liveness_label.setStyleSheet("color: #00ff88; padding: 10px;")
+            self.liveness_icon.setText("✅")
+            self.liveness_label.setText("Face detected - Ready to authenticate")
+            self.liveness_label.setStyleSheet("color: #00ff88; background: transparent;")
+            self.liveness_frame.setStyleSheet("""
+                QFrame {
+                    background: rgba(0, 255, 136, 0.1);
+                    border: 1px solid rgba(0, 255, 136, 0.3);
+                    border-radius: 10px;
+                    padding: 5px;
+                }
+            """)
         else:
-            self.liveness_label.setText("⚠️ Position your face in the frame")
-            self.liveness_label.setStyleSheet("color: #ffa500; padding: 10px;")
+            self.liveness_icon.setText("⚠️")
+            self.liveness_label.setText("Position your face in the frame")
+            self.liveness_label.setStyleSheet("color: #ffa500; background: transparent;")
+            self.liveness_frame.setStyleSheet("""
+                QFrame {
+                    background: rgba(255, 165, 0, 0.1);
+                    border: 1px solid rgba(255, 165, 0, 0.3);
+                    border-radius: 10px;
+                    padding: 5px;
+                }
+            """)
     
     def _on_authenticate_clicked(self):
         """Handle authenticate button click."""
@@ -236,7 +351,8 @@ class AuthenticationScreen(QWidget):
         
         self.is_authenticating = True
         self.auth_btn.setEnabled(False)
-        self._show_status("Authenticating...", "🔄", error=False)
+        self.auth_btn.setText("⏳ Authenticating...")
+        self._show_status("Verifying identity...", "🔄", error=False)
         
         # Get current frame
         frame = self.camera_widget.get_current_frame()
@@ -244,6 +360,7 @@ class AuthenticationScreen(QWidget):
             self._show_status("Failed to capture image", "❌", error=True)
             self.is_authenticating = False
             self.auth_btn.setEnabled(True)
+            self.auth_btn.setText("🔓 Authenticate")
             return
         
         # Convert frame to base64
@@ -284,6 +401,7 @@ class AuthenticationScreen(QWidget):
         finally:
             self.is_authenticating = False
             self.auth_btn.setEnabled(True)
+            self.auth_btn.setText("🔓 Authenticate")
     
     def _show_status(self, message: str, icon: str = "🔒", error: bool = False):
         """Show status message."""
@@ -293,22 +411,21 @@ class AuthenticationScreen(QWidget):
         self.similarity_label.hide()
         
         if error:
-            self.status_label.setStyleSheet("color: #ff4444;")
+            self.status_label.setStyleSheet("color: #ff4444; background: transparent;")
             self.status_frame.setStyleSheet("""
                 QFrame {
-                    background-color: rgba(255, 68, 68, 0.1);
-                    border: 1px solid #ff4444;
-                    border-radius: 10px;
-                    padding: 15px;
+                    background: rgba(255, 68, 68, 0.1);
+                    border: 2px solid rgba(255, 68, 68, 0.5);
+                    border-radius: 15px;
                 }
             """)
         else:
-            self.status_label.setStyleSheet("color: #888;")
+            self.status_label.setStyleSheet("color: rgba(255, 255, 255, 0.6); background: transparent;")
             self.status_frame.setStyleSheet("""
                 QFrame {
-                    background-color: #0f3460;
-                    border-radius: 10px;
-                    padding: 15px;
+                    background: rgba(15, 52, 96, 0.8);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    border-radius: 15px;
                 }
             """)
     
@@ -316,7 +433,7 @@ class AuthenticationScreen(QWidget):
         """Show successful authentication."""
         self.status_icon.setText("✅")
         self.status_label.setText("Authentication Successful!")
-        self.status_label.setStyleSheet("color: #00ff88;")
+        self.status_label.setStyleSheet("color: #00ff88; background: transparent;")
         
         username = user.get('username', 'Unknown')
         similarity = user.get('similarity', 0)
@@ -329,10 +446,9 @@ class AuthenticationScreen(QWidget):
         
         self.status_frame.setStyleSheet("""
             QFrame {
-                background-color: rgba(0, 255, 136, 0.1);
-                border: 2px solid #00ff88;
-                border-radius: 10px;
-                padding: 15px;
+                background: rgba(0, 255, 136, 0.15);
+                border: 2px solid rgba(0, 255, 136, 0.6);
+                border-radius: 15px;
             }
         """)
     
