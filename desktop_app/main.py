@@ -1,107 +1,72 @@
 """
 Main Application Window for Face Authentication System.
 Provides navigation between registration, authentication, and user management screens.
-Features modern UI with glassmorphism, animations, and premium aesthetics.
+Features a simple, professional UI design.
 """
 
 import sys
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QPushButton, QStackedWidget, QFrame, QSpacerItem, QSizePolicy,
-    QGraphicsDropShadowEffect, QGraphicsOpacityEffect
+    QLabel, QPushButton, QStackedWidget, QFrame, QSizePolicy,
+    QGraphicsDropShadowEffect
 )
-from PyQt6.QtCore import Qt, QPropertyAnimation, QSequentialAnimationGroup, QParallelAnimationGroup, QEasingCurve, QTimer
-from PyQt6.QtGui import QFont, QIcon, QColor, QLinearGradient, QPalette
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont, QColor, QPalette
 
 from .registration_screen import RegistrationScreen
 from .authentication_screen import AuthenticationScreen
 from .user_management_screen import UserManagementScreen
 
 
-class AnimatedButton(QPushButton):
-    """Custom animated button with hover effects."""
-    
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self._animation = None
-    
-    def enterEvent(self, event):
-        super().enterEvent(event)
-        # Subtle scale animation on hover
-    
-    def leaveEvent(self, event):
-        super().leaveEvent(event)
-
-
 class FeatureCard(QFrame):
-    """Modern feature card with glassmorphism effect."""
+    """Simple feature card for navigation."""
     
-    def __init__(self, icon: str, title: str, description: str, 
-                 gradient_start: str, gradient_end: str, parent=None):
+    def __init__(self, title: str, description: str, parent=None):
         super().__init__(parent)
-        self.setMinimumSize(280, 200)
+        self.setMinimumSize(280, 180)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
-        
-        self._gradient_start = gradient_start
-        self._gradient_end = gradient_end
         self._setup_style()
-        self._init_ui(icon, title, description)
-        self._add_shadow()
+        self._init_ui(title, description)
     
     def _setup_style(self):
         """Setup the card styling."""
-        self.setStyleSheet(f"""
-            FeatureCard {{
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                    stop:0 {self._gradient_start}, stop:1 {self._gradient_end});
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                border-radius: 20px;
-            }}
-            FeatureCard:hover {{
-                border: 1px solid rgba(255, 255, 255, 0.3);
-            }}
+        self.setStyleSheet("""
+            FeatureCard {
+                background-color: #334155;
+                border: 1px solid #475569;
+                border-radius: 8px;
+            }
+            FeatureCard:hover {
+                background-color: #475569;
+                border: 1px solid #64748b;
+            }
         """)
     
-    def _add_shadow(self):
-        """Add drop shadow effect."""
-        shadow = QGraphicsDropShadowEffect()
-        shadow.setBlurRadius(30)
-        shadow.setXOffset(0)
-        shadow.setYOffset(10)
-        shadow.setColor(QColor(0, 0, 0, 100))
-        self.setGraphicsEffect(shadow)
-    
-    def _init_ui(self, icon: str, title: str, description: str):
+    def _init_ui(self, title: str, description: str):
         """Initialize the card UI."""
         layout = QVBoxLayout(self)
-        layout.setSpacing(15)
+        layout.setSpacing(10)
         layout.setContentsMargins(25, 25, 25, 25)
-        
-        # Icon
-        icon_label = QLabel(icon)
-        icon_label.setFont(QFont("Segoe UI Emoji", 40))
-        icon_label.setStyleSheet("background: transparent;")
-        layout.addWidget(icon_label)
-        
-        layout.addStretch()
         
         # Title
         title_label = QLabel(title)
-        title_label.setFont(QFont("Segoe UI", 20, QFont.Weight.Bold))
-        title_label.setStyleSheet("color: white; background: transparent;")
+        title_label.setFont(QFont("Segoe UI", 18, QFont.Weight.Bold))
+        title_label.setStyleSheet("color: #f1f5f9; background: transparent;")
         layout.addWidget(title_label)
         
         # Description
         desc_label = QLabel(description)
         desc_label.setFont(QFont("Segoe UI", 11))
-        desc_label.setStyleSheet("color: rgba(255, 255, 255, 0.75); background: transparent;")
+        desc_label.setStyleSheet("color: #cbd5e1; background: transparent;")
         desc_label.setWordWrap(True)
         layout.addWidget(desc_label)
         
+        layout.addStretch()
+        
         # Arrow indicator
-        arrow = QLabel("→")
+        arrow = QLabel(">")
         arrow.setFont(QFont("Segoe UI", 16))
-        arrow.setStyleSheet("color: rgba(255, 255, 255, 0.5); background: transparent;")
+        arrow.setStyleSheet("color: #94a3b8; background: transparent;")
         arrow.setAlignment(Qt.AlignmentFlag.AlignRight)
         layout.addWidget(arrow)
     
@@ -117,7 +82,7 @@ class FeatureCard(QFrame):
 
 
 class HomeScreen(QWidget):
-    """Home screen with navigation to registration, authentication, and user management."""
+    """Home screen with navigation."""
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -132,44 +97,18 @@ class HomeScreen(QWidget):
         # Spacer at top
         layout.addStretch(1)
         
-        # Logo/Icon with glow effect
-        logo_container = QWidget()
-        logo_layout = QVBoxLayout(logo_container)
-        logo_layout.setSpacing(5)
-        
-        logo_label = QLabel("🔐")
-        logo_label.setFont(QFont("Segoe UI Emoji", 72))
-        logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        logo_layout.addWidget(logo_label)
-        
-        layout.addWidget(logo_container)
-        
-        # Title with gradient effect
+        # Title
         title = QLabel("Face Authentication System")
-        title.setFont(QFont("Segoe UI", 38, QFont.Weight.Bold))
+        title.setFont(QFont("Segoe UI", 32, QFont.Weight.Bold))
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title.setStyleSheet("""
-            color: #ffffff;
-        """)
+        title.setStyleSheet("color: #f1f5f9;")
         layout.addWidget(title)
         
-        # Gradient line under title
-        line = QFrame()
-        line.setFixedSize(200, 3)
-        line.setStyleSheet("""
-            background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                stop:0 transparent, stop:0.2 #00d4ff, stop:0.8 #00ff88, stop:1 transparent);
-            border-radius: 1px;
-        """)
-        layout.addWidget(line, alignment=Qt.AlignmentFlag.AlignCenter)
-        
-        layout.addSpacing(10)
-        
         # Subtitle
-        subtitle = QLabel("Secure biometric authentication powered by AI facial recognition")
-        subtitle.setFont(QFont("Segoe UI", 13))
+        subtitle = QLabel("Secure biometric authentication")
+        subtitle.setFont(QFont("Segoe UI", 14))
         subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        subtitle.setStyleSheet("color: rgba(255, 255, 255, 0.6);")
+        subtitle.setStyleSheet("color: #94a3b8;")
         layout.addWidget(subtitle)
         
         layout.addSpacing(40)
@@ -177,35 +116,26 @@ class HomeScreen(QWidget):
         # Feature cards container
         cards_container = QWidget()
         cards_layout = QHBoxLayout(cards_container)
-        cards_layout.setSpacing(25)
+        cards_layout.setSpacing(20)
         
         # Register Card
         self.register_card = FeatureCard(
-            icon="📝",
             title="Register",
-            description="Create a new account with facial recognition",
-            gradient_start="#0099cc",
-            gradient_end="#00d4ff"
+            description="Create a new user account"
         )
         cards_layout.addWidget(self.register_card)
         
         # Authenticate Card
         self.auth_card = FeatureCard(
-            icon="🔓",
             title="Authenticate",
-            description="Verify your identity using face scan",
-            gradient_start="#00cc6e",
-            gradient_end="#00ff88"
+            description="Verify user identity"
         )
         cards_layout.addWidget(self.auth_card)
         
         # Manage Users Card
         self.manage_card = FeatureCard(
-            icon="👥",
             title="Manage Users",
-            description="View, edit, or delete registered users",
-            gradient_start="#cc4444",
-            gradient_end="#ff6b6b"
+            description="View and delete users"
         )
         cards_layout.addWidget(self.manage_card)
         
@@ -214,74 +144,16 @@ class HomeScreen(QWidget):
         # Spacer at bottom
         layout.addStretch(2)
         
-        # Stats bar
-        stats_bar = QFrame()
-        stats_bar.setStyleSheet("""
-            QFrame {
-                background: rgba(22, 33, 62, 0.5);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                border-radius: 12px;
-                padding: 10px;
-            }
-        """)
-        stats_layout = QHBoxLayout(stats_bar)
-        stats_layout.setSpacing(40)
-        
-        # Stats items
-        stats = [
-            ("🛡️", "Secure", "256-bit encryption"),
-            ("⚡", "Fast", "Sub-second verification"),
-            ("🎯", "Accurate", "99.9% precision"),
-            ("🔒", "Liveness", "Anti-spoofing enabled")
-        ]
-        
-        for icon, title, desc in stats:
-            stat_widget = self._create_stat_item(icon, title, desc)
-            stats_layout.addWidget(stat_widget)
-        
-        layout.addWidget(stats_bar)
-        
-        layout.addSpacing(10)
-        
         # Footer
-        footer = QLabel("Powered by FaceNet • PyQt6 • OpenCV • TensorFlow")
+        footer = QLabel("Face Authentication System v1.0")
         footer.setFont(QFont("Segoe UI", 10))
         footer.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        footer.setStyleSheet("color: rgba(255, 255, 255, 0.4);")
+        footer.setStyleSheet("color: #64748b;")
         layout.addWidget(footer)
-    
-    def _create_stat_item(self, icon: str, title: str, description: str) -> QWidget:
-        """Create a stat item widget."""
-        widget = QWidget()
-        layout = QHBoxLayout(widget)
-        layout.setSpacing(10)
-        layout.setContentsMargins(0, 0, 0, 0)
-        
-        icon_label = QLabel(icon)
-        icon_label.setFont(QFont("Segoe UI Emoji", 18))
-        icon_label.setStyleSheet("background: transparent;")
-        layout.addWidget(icon_label)
-        
-        text_layout = QVBoxLayout()
-        text_layout.setSpacing(0)
-        
-        title_label = QLabel(title)
-        title_label.setFont(QFont("Segoe UI", 11, QFont.Weight.Bold))
-        title_label.setStyleSheet("color: #ffffff; background: transparent;")
-        text_layout.addWidget(title_label)
-        
-        desc_label = QLabel(description)
-        desc_label.setFont(QFont("Segoe UI", 9))
-        desc_label.setStyleSheet("color: rgba(255, 255, 255, 0.5); background: transparent;")
-        text_layout.addWidget(desc_label)
-        
-        layout.addLayout(text_layout)
-        
-        return widget
 
 
 class MainWindow(QMainWindow):
-    """Main application window with screen navigation."""
+    """Main application window."""
     
     def __init__(self, api_url: str = "http://localhost:5000"):
         super().__init__()
@@ -292,63 +164,38 @@ class MainWindow(QMainWindow):
     def _init_ui(self):
         """Initialize the main window UI."""
         self.setWindowTitle("Face Authentication System")
-        self.setMinimumSize(1100, 750)
-        self.resize(1280, 850)
+        self.setMinimumSize(1000, 700)
+        self.resize(1100, 750)
         
-        # Set modern dark theme
+        # Set simple dark theme styling
         self.setStyleSheet("""
             QMainWindow {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                    stop:0 #0d1117, stop:0.5 #161b22, stop:1 #0d1117);
+                background-color: #1e293b;
             }
             QWidget {
-                background: transparent;
-                color: #ffffff;
-            }
-            QLabel {
-                color: #ffffff;
-                background: transparent;
+                background-color: #1e293b;
+                color: #f1f5f9;
             }
             QMessageBox {
-                background-color: #1a1a2e;
+                background-color: #1e293b;
             }
             QMessageBox QLabel {
-                color: #ffffff;
+                color: #f1f5f9;
             }
             QMessageBox QPushButton {
-                background-color: #16213e;
-                color: #ffffff;
-                border: 1px solid #0f3460;
-                border-radius: 5px;
-                padding: 8px 20px;
-                min-width: 80px;
+                background-color: #334155;
+                color: #f1f5f9;
+                border: 1px solid #475569;
+                border-radius: 4px;
+                padding: 6px 15px;
             }
             QMessageBox QPushButton:hover {
-                background-color: #0f3460;
-            }
-            QScrollBar:vertical {
-                background: rgba(22, 33, 62, 0.5);
-                width: 10px;
-                border-radius: 5px;
-            }
-            QScrollBar::handle:vertical {
-                background: rgba(0, 212, 255, 0.5);
-                border-radius: 5px;
-            }
-            QScrollBar::handle:vertical:hover {
-                background: rgba(0, 212, 255, 0.8);
-            }
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-                height: 0px;
+                background-color: #475569;
             }
         """)
         
-        # Central widget with gradient background
+        # Central widget
         central_widget = QWidget()
-        central_widget.setStyleSheet("""
-            background: qlineargradient(x1:0, y1:0, x2:0.5, y2:1,
-                stop:0 #0d1117, stop:0.3 #161b22, stop:0.7 #1a1a2e, stop:1 #16213e);
-        """)
         self.setCentralWidget(central_widget)
         
         layout = QVBoxLayout(central_widget)
@@ -373,7 +220,7 @@ class MainWindow(QMainWindow):
     
     def _connect_signals(self):
         """Connect screen signals."""
-        # Home screen - using mousePressEvent override
+        # Home screen
         self.home_screen.register_card.mousePressEvent = lambda e: self.stack.setCurrentIndex(1)
         self.home_screen.auth_card.mousePressEvent = lambda e: self.stack.setCurrentIndex(2)
         self.home_screen.manage_card.mousePressEvent = lambda e: self.stack.setCurrentIndex(3)
@@ -403,54 +250,45 @@ class MainWindow(QMainWindow):
         )
     
     def _on_registration_success(self, username: str, user_id: int):
-        """Handle successful registration."""
-        print(f"User registered: {username} (ID: {user_id})")
+        print(f"User registered: {username}")
     
     def _on_authentication_success(self, user_data: dict):
-        """Handle successful authentication."""
         print(f"User authenticated: {user_data}")
     
     def _on_user_deleted(self, username: str):
-        """Handle user deletion."""
         print(f"User deleted: {username}")
     
     def closeEvent(self, event):
         """Handle window close."""
-        # Stop cameras
         self.registration_screen.stop_camera()
         self.authentication_screen.stop_camera()
         super().closeEvent(event)
 
 
 def main():
-    """Main entry point for the desktop application."""
+    """Main entry point."""
     app = QApplication(sys.argv)
     
-    # Set application metadata
     app.setApplicationName("Face Authentication System")
-    app.setOrganizationName("FaceAuth")
-    
-    # Set global style
+    app.setOrganizationName("FaceIcon")
     app.setStyle("Fusion")
     
-    # Create dark palette
+    # Simple dark palette
     dark_palette = QPalette()
-    dark_palette.setColor(QPalette.ColorRole.Window, QColor(13, 17, 23))
-    dark_palette.setColor(QPalette.ColorRole.WindowText, QColor(255, 255, 255))
-    dark_palette.setColor(QPalette.ColorRole.Base, QColor(22, 27, 34))
-    dark_palette.setColor(QPalette.ColorRole.AlternateBase, QColor(26, 26, 46))
-    dark_palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(255, 255, 255))
-    dark_palette.setColor(QPalette.ColorRole.ToolTipText, QColor(255, 255, 255))
-    dark_palette.setColor(QPalette.ColorRole.Text, QColor(255, 255, 255))
-    dark_palette.setColor(QPalette.ColorRole.Button, QColor(22, 33, 62))
-    dark_palette.setColor(QPalette.ColorRole.ButtonText, QColor(255, 255, 255))
-    dark_palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 0, 0))
-    dark_palette.setColor(QPalette.ColorRole.Link, QColor(0, 212, 255))
-    dark_palette.setColor(QPalette.ColorRole.Highlight, QColor(0, 212, 255))
-    dark_palette.setColor(QPalette.ColorRole.HighlightedText, QColor(0, 0, 0))
+    dark_palette.setColor(QPalette.ColorRole.Window, QColor("#1e293b"))
+    dark_palette.setColor(QPalette.ColorRole.WindowText, QColor("#f1f5f9"))
+    dark_palette.setColor(QPalette.ColorRole.Base, QColor("#0f172a"))
+    dark_palette.setColor(QPalette.ColorRole.AlternateBase, QColor("#1e293b"))
+    dark_palette.setColor(QPalette.ColorRole.ToolTipBase, QColor("#f1f5f9"))
+    dark_palette.setColor(QPalette.ColorRole.ToolTipText, QColor("#f1f5f9"))
+    dark_palette.setColor(QPalette.ColorRole.Text, QColor("#f1f5f9"))
+    dark_palette.setColor(QPalette.ColorRole.Button, QColor("#334155"))
+    dark_palette.setColor(QPalette.ColorRole.ButtonText, QColor("#f1f5f9"))
+    dark_palette.setColor(QPalette.ColorRole.Link, QColor("#3b82f6"))
+    dark_palette.setColor(QPalette.ColorRole.Highlight, QColor("#3b82f6"))
+    dark_palette.setColor(QPalette.ColorRole.HighlightedText, QColor("#000000"))
     app.setPalette(dark_palette)
     
-    # Create and show main window
     window = MainWindow(api_url="http://localhost:5000")
     window.show()
     

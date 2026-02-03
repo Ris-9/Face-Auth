@@ -15,7 +15,7 @@ import cv2
 class FaceRecognition:
     """FaceNet-based face recognition with MTCNN detection."""
     
-    def __init__(self, device: str = None, similarity_threshold: float = 0.7):
+    def __init__(self, device: str = None, similarity_threshold: float = 0.85):
         """
         Initialize face recognition models.
         

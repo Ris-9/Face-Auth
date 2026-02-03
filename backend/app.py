@@ -35,7 +35,7 @@ def get_face_recognition():
     global face_recognition
     if face_recognition is None:
         print("Loading face recognition model...")
-        face_recognition = FaceRecognition(similarity_threshold=0.7)
+        face_recognition = FaceRecognition()
         print("Model loaded successfully!")
     return face_recognition
 
@@ -137,13 +137,14 @@ def register_user():
                 'message': 'No face detected in image. Please ensure your face is clearly visible.'
             }), 400
         
-        # Check liveness
+            # Check liveness
         if face_box is not None:
             is_live, liveness_results = liveness_detector.check_liveness(image, face_box)
             
-            # For registration, we're more lenient with liveness
-            # Just check texture to ensure it's not a printed photo
-            if not liveness_results['texture_real']:
+            # For registration, check texture to ensure it's not a printed photo
+            # Use safe access with .get to prevent crashes if structure changes
+            texture_check = liveness_results.get('checks', {}).get('texture', {})
+            if not texture_check.get('passed', False):
                 return jsonify({
                     'success': False,
                     'message': 'Liveness check failed. Please use a real camera, not a photo.',
@@ -293,9 +294,9 @@ def authenticate_user():
         else:
             return jsonify({
                 'success': False,
-                'message': 'Face not recognized. User not registered.',
+                'message': 'Face not recognized. User not registered.'+str(float(similarity)),
                 'authenticated': False,
-                'best_similarity': float(similarity) if similarity else 0.0
+                'best_similarity': float(similarity)
             }), 401
             
     except Exception as e:
